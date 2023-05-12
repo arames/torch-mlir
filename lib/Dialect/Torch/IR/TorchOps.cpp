@@ -2043,7 +2043,13 @@ void PrimTupleUnpackOp::getCanonicalizationPatterns(RewritePatternSet &patterns,
     if (!tupleConstruct)
       return failure();
 
-    rewriter.replaceOp(op, tupleConstruct.getElements());
+    llvm::SmallVector<Value> derefinedElements;
+    for (auto [type, element] :
+         llvm::zip(op.getResultTypes(), tupleConstruct.getElements())) {
+      derefinedElements.push_back(
+          rewriter.createOrFold<DerefineOp>(op.getLoc(), type, element));
+    }
+    rewriter.replaceOp(op, derefinedElements);
     return success();
   });
 }
